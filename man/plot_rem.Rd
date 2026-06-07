@@ -10,7 +10,7 @@ plot_rem(
   outputfolder,
   genecol,
   metathr,
-  colors = c(low = "blue", mid = "white", high = "red", na = "grey80"),
+  colors = c(low = "#083e46", mid = "white", high = "#811820", na = "grey80"),
   point_size = 0.6,
   label_genes = NULL,
   label_top_n = NULL,

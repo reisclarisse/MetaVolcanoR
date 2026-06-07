@@ -38,7 +38,7 @@ NULL
 draw_forest <- function(remres, gene="MMP9", genecol="Symbol", 
                        foldchangecol="Log2FC", llcol="CI.L", rlcol="CI.R", 
                        jobname="MetaVolcano", outputfolder = tempdir(), draw="PDF",
-                       colors = c(positive = "#E41A1C", negative = "#377EB8", 
+                       colors = c(positive = "#811820", negative = "#083e46", 
                                  neutral = "#bdbdbd", reference = "#969696"),
                        point_size = 2,
                        plot_width = 4,

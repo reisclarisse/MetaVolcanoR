@@ -26,7 +26,7 @@
 #' gg <- plot_mv(mv@metaresult, length(diffexplist), "Symbol", FALSE, "Mean")
 #' plot(gg)
 plot_mv <- function(meta_diffexp, nstud, genecol, comb, metafc,
-                    colors = c("#377EB8", "grey", "#E41A1C"),
+                    colors = c("#083e46", "grey", "#811820"),
                     point_size = 0.5,
                     label_genes = NULL,
                     label_top_n = NULL,
@@ -47,7 +47,7 @@ plot_mv <- function(meta_diffexp, nstud, genecol, comb, metafc,
                 dplyr::pull(!!rlang::sym(genecol))
         } else {
             top_genes <- meta_diffexp %>%
-                dplyr::arrange(desc(ndeg)) %>%
+                dplyr::arrange(desc(abs(idx))) %>%
                 head(label_top_n) %>%
                 dplyr::pull(!!rlang::sym(genecol))
         }
@@ -74,7 +74,8 @@ plot_mv <- function(meta_diffexp, nstud, genecol, comb, metafc,
                                       text = !!rlang::sym(genecol))) +
             geom_jitter(aes(color = degvcount), size = point_size, 
                        width = 0.45, height = 0.45) +
-            scale_x_discrete(limits = -nstud:nstud) +
+            scale_x_continuous(breaks = -nstud:nstud, 
+                   limits = c(-nstud - 0.5, nstud + 0.5)) +
             labs(x = "Sign consistency",
                  y = "Number of times as differentially expressed",
                  title = plot_title)

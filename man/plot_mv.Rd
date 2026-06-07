@@ -10,7 +10,7 @@ plot_mv(
   genecol,
   comb,
   metafc,
-  colors = c("#377EB8", "grey", "#E41A1C"),
+  colors = c("#083e46", "grey", "#811820"),
   point_size = 0.5,
   label_genes = NULL,
   label_top_n = NULL,

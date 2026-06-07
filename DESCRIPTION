@@ -36,7 +36,13 @@ Imports:
     utils
 Suggests:
     knitr,
-    testthat
+    testthat, 
+    knitr,
+    rmarkdown,
+    fgsea,
+    msigdbr,
+    stringr,
+    forcats
 License: GPL-3
 Encoding: UTF-8
 biocViews: GeneExpression, DifferentialExpression, Transcriptomics, mRNAMicroarray, RNASeq
