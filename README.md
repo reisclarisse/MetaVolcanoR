@@ -1,13 +1,13 @@
 # MetaVolcanoR
 
-**Gene expression meta-analysis visualization tool with publication-ready customization**
+**Meta-analysis visualization tool with publication-ready customization**
 
 [![R](https://img.shields.io/badge/R-%3E%3D4.4.0-blue)](https://www.r-project.org/)
 [![License](https://img.shields.io/badge/license-GPL--3-orange)](https://www.gnu.org/licenses/gpl-3.0.en.html)
 
 ## Overview
 
-MetaVolcanoR combines differential gene expression results from multiple studies to identify consistently perturbed genes. It implements three complementary meta-analysis strategies:
+MetaVolcanoR combines differential gene, transcirpt, methylation and protein expression results from multiple studies to identify consistently perturbed genes. It implements three complementary meta-analysis strategies:
 
 1. **Random Effects Model (REM)** - Rigorous statistical meta-analysis accounting for study variance
 2. **Vote-counting** - Quick exploration of cross-study DEG consistency  
