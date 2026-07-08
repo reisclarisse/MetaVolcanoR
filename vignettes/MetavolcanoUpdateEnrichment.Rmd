@@ -1,6 +1,6 @@
 ---
 title: "MetaVolcanoR: Updated Features and Enrichment Analysis"
-author: "Izabela Mamede, Bárbara Marinho"
+author: "Izabela Mamede, Bárbara Marinho, Cesar Prada, Helder Nakaya"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
@@ -19,6 +19,8 @@ knitr::opts_chunk$set(
   fig.height = 5
 )
 ```
+
+> 📄 **See also:** [Proteomics meta-analysis — CPTAC pan-cancer example](cptac-proteomics.html)
 
 ## Overview
 
@@ -69,7 +71,6 @@ mv_rem <- rem_mv(
   llcol         = "CI.L",
   rlcol         = "CI.R",
   metathr       = 0.01,
-  collaps       = TRUE,
   jobname       = "REM_example",
   outputfolder  = tempdir(),
   draw          = "HTML"
@@ -92,7 +93,6 @@ mv_rem_labeled <- rem_mv(
   llcol         = "CI.L",
   rlcol         = "CI.R",
   metathr       = 0.01,
-  collaps       = TRUE,
   label_top_n   = 10,
   label_size    = 3.5,
   plot_title    = "REM Meta-Analysis (Top 10)",
@@ -119,7 +119,6 @@ mv_rem_custom <- rem_mv(
   llcol         = "CI.L",
   rlcol         = "CI.R",
   metathr       = 0.01,
-  collaps       = TRUE,
   colors        = c(low = "purple", mid = "white", high = "orange", 
                     na = "gray80"),
   label_top_n   = 5,
@@ -199,7 +198,6 @@ mv_vote <- votecount_mv(
   pvalue        = 0.05,
   foldchange    = 0,
   metathr       = 0.01,
-  collaps       = TRUE,
   label_top_n   = 10,
   label_size    = 3.5,
   plot_title    = "Vote-Counting (Top 10 by |idx|)",
@@ -244,7 +242,6 @@ mv_fisher <- combining_mv(
   genenamecol   = "Symbol",
   metafc        = "Mean",
   metathr       = 0.01,
-  collaps       = TRUE,
   colors        = c("#083e46", "gray90", "#811820"),
   point_size    = 1.2,
   show_legend   = TRUE,
@@ -349,173 +346,3 @@ enrich_custom <- enrichment_mv(
 )
 ```
 
-## 6. Application to Proteomics Data
-
-MetaVolcanoR is not limited to gene expression: every function operates on
-any table of feature identifiers with a fold change, a p-value, and a
-variance estimate. This means the same three meta-analysis strategies, the
-same plots, and `enrichment_mv()` all apply directly to **differential
-protein abundance** data — from mass-spectrometry proteomics (limma,
-MSstats, DEqMS) or from affinity platforms such as Olink and SomaScan. The
-only difference is what `genenamecol` identifiers mean: instead of gene
-symbols from RNA-seq, they are gene-level protein symbols.
-
-To demonstrate this, we meta-analyze the **day-7 versus day-0 plasma
-proteomic response to seasonal influenza vaccination** across five
-independent cohorts — a systems-vaccinology setting where a shared,
-reproducible molecular signature is expected despite cohort-to-cohort
-variation.
-
-```{r prot_setup}
-data(vaccine_proteomics)
-cat("Number of cohorts:", length(vaccine_proteomics), "\n")
-cat("Proteins per cohort:", 
-    paste(sapply(vaccine_proteomics, nrow), collapse = ", "), "\n")
-head(vaccine_proteomics[[1]])
-```
-
-Each cohort table has the same structure MetaVolcanoR expects for any
-feature type: `Symbol` (here, a protein identifier), `Log2FC`, `pvalue`,
-`CI.L`, `CI.R`. For proteomics results from limma/DEqMS, `CI.L`/`CI.R` are
-typically derived from the standard error as `logFC ± 1.96 * SE`; the
-`prepare_limma()` helper does this automatically.
-
-### REM on proteins
-
-```{r prot_rem}
-mv_prot_rem <- rem_mv(
-  diffexp       = vaccine_proteomics,
-  pcriteria     = "pvalue",
-  foldchangecol = "Log2FC",
-  genenamecol   = "Symbol",
-  llcol         = "CI.L",
-  rlcol         = "CI.R",
-  metathr       = 0.01,
-  collaps       = TRUE,
-  label_genes   = c("IGHG1", "IGKC", "TNFRSF17", "MZB1", "CD38", "PRDM1"),
-  label_size    = 3.5,
-  plot_title    = "Day 7 vs Day 0 plasma proteome — influenza vaccine (5 cohorts)",
-  jobname       = "VaccineProteome_REM",
-  outputfolder  = tempdir(),
-  draw          = "HTML"
-)
-
-mv_prot_rem@MetaVolcano
-```
-
-The proteins at the top of the ranking — immunoglobulin chains (`IGHG1`,
-`IGKC`), the plasmablast marker `TNFRSF17` (BCMA), `CD38`, and the
-plasma-cell factors `MZB1`, `PRDM1`, `XBP1` — recapitulate the canonical
-day-7 antibody-secreting-cell signature of influenza vaccination, now
-recovered at the **protein** level and reinforced by requiring consistency
-across all five cohorts.
-
-```{r prot_forest}
-draw_forest(
-  remres        = mv_prot_rem,
-  gene          = "TNFRSF17",
-  genecol       = "Symbol",
-  foldchangecol = "Log2FC",
-  llcol         = "CI.L",
-  rlcol         = "CI.R",
-  jobname       = "VaccineProteome_forest",
-  outputfolder  = tempdir(),
-  draw          = "HTML"
-)
-```
-
-### Vote-counting and combining on proteins
-
-```{r prot_vote}
-mv_prot_vote <- votecount_mv(
-  diffexp       = vaccine_proteomics,
-  pcriteria     = "pvalue",
-  foldchangecol = "Log2FC",
-  genenamecol   = "Symbol",
-  geneidcol     = NULL,
-  pvalue        = 0.05,
-  foldchange    = 0,
-  metathr       = 0.01,
-  collaps       = TRUE,
-  label_top_n   = 10,
-  label_size    = 3.5,
-  plot_title    = "Vote-Counting: vaccine plasma proteins (Top 10 by |idx|)",
-  jobname       = "VaccineProteome_vote",
-  outputfolder  = tempdir(),
-  draw          = "HTML"
-)
-
-mv_prot_vote@degfreq
-mv_prot_vote@MetaVolcano
-```
-
-```{r prot_fisher}
-mv_prot_fisher <- combining_mv(
-  diffexp       = vaccine_proteomics,
-  pcriteria     = "pvalue",
-  foldchangecol = "Log2FC",
-  genenamecol   = "Symbol",
-  metafc        = "Mean",
-  metathr       = 0.01,
-  collaps       = TRUE,
-  colors        = c("#083e46", "gray90", "#811820"),
-  point_size    = 1.2,
-  plot_title    = "Fisher's combined test — vaccine plasma proteome",
-  jobname       = "VaccineProteome_fisher",
-  outputfolder  = tempdir(),
-  draw          = "HTML"
-)
-
-mv_prot_fisher@MetaVolcano
-```
-
-All three strategies converge on the same core of plasmablast- and
-immunoglobulin-associated proteins, each perturbed in the same direction in
-every cohort — the strongest evidence of reproducibility available in a
-five-study design.
-
-### Functional enrichment of the consistent proteins
-
-Because `enrichment_mv()` operates on the REM result via gene-level
-symbols, it works on the protein meta-analysis without modification.
-Ranking the proteins by their summary statistics and running fGSEA against
-MSigDB confirms that the consistent proteins are dominated by humoral /
-B-cell and immunoglobulin programs — exactly the biology expected one week
-after vaccination.
-
-```{r prot_enrich, eval=FALSE}
-# GO Biological Process, balanced ranking
-enrich_prot_bp <- enrichment_mv(
-  mv_prot_rem,
-  category    = "C5",
-  subcategory = "GO:BP",
-  ranking     = "weighted_fc",
-  plot_padj   = 0.05,
-  plot_top_n  = 20,
-  plot_title  = "GO:BP enrichment — vaccine plasma proteome"
-)
-enrich_prot_bp$plot
-head(enrich_prot_bp$result)
-
-# Immunologic signature collection (C7) is especially apt for vaccine data
-enrich_prot_c7 <- enrichment_mv(mv_prot_rem, category = "C7", ranking = "signed_p")
-enrich_prot_c7$plot
-```
-
-Expected top pathways include immunoglobulin-mediated immune response,
-B-cell / plasma-cell differentiation, and humoral response terms — a
-functional readout that ties the protein-level meta-analysis back to the
-mechanisms systems vaccinology has long characterized at the
-transcriptional level.
-
-## Summary of changes
-
-| Feature | Before | After |
-|---------|--------|-------|
-| Default palette | blue/grey/red | #083e46/grey90/#811820 |
-| Vote-counting axis | `scale_x_discrete` (truncated) | `scale_x_continuous` (symmetric) |
-| Vote-counting labels | ranked by `ndeg` | ranked by `abs(idx)` |
-| REM labels | ranked by `randomP` | ranked by `rank` (topconfects) |
-| DEG barplot colors | hardcoded | `colors` parameter |
-| Enrichment analysis | not available | `enrichment_mv()` |
-| Protein-level data | not demonstrated | full worked example (vaccine proteomics, §6) |
