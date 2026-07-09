@@ -234,7 +234,7 @@ mv_vote@degfreq
 
 Fisher's combining approach also supports the updated color palette:
 
-```{r fisher}
+```{r fisher, fig.width=14, fig.height=8}
 mv_fisher <- combining_mv(
   diffexp       = diffexplist,
   pcriteria     = "pvalue",
