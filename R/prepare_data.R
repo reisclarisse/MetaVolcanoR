@@ -169,3 +169,65 @@ prepare_edger <- function(edger_result, gene_column = NULL) {
   return(result)
 }
 
+#' Prepare Swish/fishpond transcript-level results for MetaVolcanoR
+#'
+#' \code{prepare_swish} formats a differential transcript expression (DET)
+#' results table produced by \code{fishpond::swish} so it can be used
+#' directly as one element of the \code{diffexp} list passed to
+#' \code{rem_mv}, \code{votecount_mv}, or \code{combining_mv}.
+#'
+#' @param det A data.frame of Swish/fishpond DET results, typically the
+#'   output of \code{mcols(se)} after running \code{swish()}, coerced to a
+#'   data.frame. Must contain the columns named by \code{tx_col},
+#'   \code{log2FC}, \code{stat}, and \code{pvalue}.
+#' @param tx_col Character. Name of the column in \code{det} holding the
+#'   transcript (or gene) identifier. Default \code{"transcript_name"}.
+#' @param ci_level Numeric between 0 and 1. Confidence level for the
+#'   derived CI. Default \code{0.95}.
+#'
+#' @return A data.frame with columns \code{Symbol}, \code{Log2FC},
+#'   \code{pvalue}, \code{CI.L}, \code{CI.R} — ready to be used as one
+#'   element of the named list passed to \code{rem_mv(diffexp = ...)}.
+#'
+#' @export
+#' @examples
+#' \dontrun{
+#' library(fishpond)
+#' se <- swish(se, x = "condition")
+#' det <- as.data.frame(mcols(se))
+#' det$transcript_name <- rownames(se)
+#' study1 <- prepare_swish(det, tx_col = "transcript_name")
+#'
+#' # Use in meta-analysis
+#' meta_result <- rem_mv(list(study1 = study1, study2 = study2))
+#' }
+prepare_swish <- function(det, tx_col = "transcript_name", ci_level = 0.95) {
+
+  stopifnot(is.data.frame(det))
+  required_cols <- c(tx_col, "log2FC", "stat", "pvalue")
+  missing_cols <- setdiff(required_cols, colnames(det))
+  if (length(missing_cols) > 0) {
+    stop("prepare_swish: missing required column(s) in `det`: ",
+         paste(missing_cols, collapse = ", "))
+  }
+
+  z <- qnorm(1 - (1 - ci_level) / 2)
+
+  # SE = |log2FC / stat|; guard stat == 0 / NA explicitly (via ifelse)
+  # rather than letting them silently become Inf or NaN downstream.
+  result <- dplyr::mutate(det,
+                         Symbol = .data[[tx_col]],
+                         Log2FC = log2FC,
+                         pvalue = pvalue,
+                         SE_approx = ifelse(is.na(stat) | stat == 0,
+                                             NA_real_,
+                                             abs(log2FC / stat)),
+                         CI.L = log2FC - z * SE_approx,
+                         CI.R = log2FC + z * SE_approx) %>%
+    dplyr::select(Symbol, Log2FC, pvalue, CI.L, CI.R) %>%
+    dplyr::filter(is.finite(Log2FC), is.finite(pvalue),
+                  is.finite(CI.L), is.finite(CI.R))
+
+  return(result)
+}
+
