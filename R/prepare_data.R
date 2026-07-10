@@ -181,7 +181,11 @@ prepare_edger <- function(edger_result, gene_column = NULL) {
 #'   data.frame. Must contain the columns named by \code{tx_col},
 #'   \code{log2FC}, \code{stat}, and \code{pvalue}.
 #' @param tx_col Character. Name of the column in \code{det} holding the
-#'   transcript (or gene) identifier. Default \code{"transcript_name"}.
+#'   transcript (or gene) identifier. If \code{NULL} (the default),
+#'   auto-detected from \code{"tx_name"}, \code{"tx_id"},
+#'   \code{"transcript_id"}, or \code{"transcript_name"} (in that order,
+#'   typically added by \code{tximeta::tximeta()}). Specify explicitly if
+#'   none of these match your column name.
 #' @param ci_level Numeric between 0 and 1. Confidence level for the
 #'   derived CI. Default \code{0.95}.
 #'
@@ -195,24 +199,37 @@ prepare_edger <- function(edger_result, gene_column = NULL) {
 #' library(fishpond)
 #' se <- swish(se, x = "condition")
 #' det <- as.data.frame(mcols(se))
-#' det$transcript_name <- rownames(se)
-#' study1 <- prepare_swish(det, tx_col = "transcript_name")
+#'
+#' # Auto-detects tx_name/tx_id if tximeta added them to rowData
+#' study1 <- prepare_swish(det)
+#'
+#' # Or specify explicitly if your identifier column has a different name
+#' study1 <- prepare_swish(det, tx_col = "tx_name")
 #'
 #' # Use in meta-analysis
 #' meta_result <- rem_mv(list(study1 = study1, study2 = study2))
 #' }
-prepare_swish <- function(det, tx_col = "transcript_name", ci_level = 0.95) {
-
+prepare_swish <- function(det, tx_col = NULL, ci_level = 0.95) {
   stopifnot(is.data.frame(det))
+
+  if (is.null(tx_col)) {
+    candidates <- c("tx_name", "tx_id", "transcript_id", "transcript_name")
+    found <- candidates[candidates %in% colnames(det)]
+    if (length(found) == 0) {
+      stop("prepare_swish: could not auto-detect a transcript identifier ",
+           "column in `det` (looked for: ", paste(candidates, collapse = ", "),
+           "). Please specify `tx_col` explicitly.")
+    }
+    tx_col <- found[1]
+  }
+
   required_cols <- c(tx_col, "log2FC", "stat", "pvalue")
   missing_cols <- setdiff(required_cols, colnames(det))
   if (length(missing_cols) > 0) {
     stop("prepare_swish: missing required column(s) in `det`: ",
          paste(missing_cols, collapse = ", "))
   }
-
   z <- qnorm(1 - (1 - ci_level) / 2)
-
   # SE = |log2FC / stat|; guard stat == 0 / NA explicitly (via ifelse)
   # rather than letting them silently become Inf or NaN downstream.
   result <- dplyr::mutate(det,
@@ -227,7 +244,5 @@ prepare_swish <- function(det, tx_col = "transcript_name", ci_level = 0.95) {
     dplyr::select(Symbol, Log2FC, pvalue, CI.L, CI.R) %>%
     dplyr::filter(is.finite(Log2FC), is.finite(pvalue),
                   is.finite(CI.L), is.finite(CI.R))
-
   return(result)
 }
-
